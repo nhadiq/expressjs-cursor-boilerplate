@@ -1,0 +1,62 @@
+---
+description: Express app factory, middleware order, ESM, graceful shutdown
+alwaysApply: false
+globs: src/app.ts, src/server.ts, src/env.ts, src/middleware/**/*
+---
+
+# Express Core
+
+Expert-level Express 5 + TypeScript practices for this API-only project.
+
+## App factory
+
+- `src/app.ts` exports `createApp()` — used by `server.ts` and test helpers
+- `src/server.ts` creates HTTP server, listens on `PORT` (default 4000), handles graceful shutdown
+- ESM only (`"type": "module"`) — required by Better Auth
+
+## Middleware order (critical)
+
+```text
+1. trust proxy (if TRUST_PROXY)
+2. helmet + compression
+3. CORS (credentials: true, origin: CLIENT_URL)
+4. request ID
+5. pino-http logging
+6. rate limit on /api/auth/*
+7. Better Auth handler (BEFORE body parser)
+8. express.json()
+9. hpp()
+10. health routes
+11. /api/v1 routers
+12. OpenAPI docs
+13. not-found handler
+14. global error handler
+```
+
+Never reorder steps 7–8. See `express-auth.mdc`.
+
+## Graceful shutdown
+
+- Handle `SIGTERM` / `SIGINT` in `server.ts`
+- Close HTTP server, then `prisma.$disconnect()`
+- Document in `docs/deployment.md`
+
+## Environment
+
+- All config validated in `src/env.ts` with Zod at startup
+- Never read `process.env` directly outside `env.ts` (except `vitest.setup.ts`)
+
+## Error handling
+
+- Use `asyncHandler` wrapper for async route handlers
+- Global error handler maps `ForbiddenError`→403, `NotFoundError`→404, Zod→400
+- No stack traces in production responses
+
+## Type extensions
+
+- `src/types/express.d.ts` — `req.user`, `req.session`, `req.requestId`, `req.activeOrgId`
+
+## Cross-reference
+
+> Route patterns: `express-api.mdc`
+> Auth mount: `express-auth.mdc`

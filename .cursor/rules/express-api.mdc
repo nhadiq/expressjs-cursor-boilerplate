@@ -1,0 +1,72 @@
+---
+description: Route → controller → service pattern, Zod validation, response envelope
+alwaysApply: false
+globs: src/modules/**/*, src/routes/**/*
+---
+
+# Express API
+
+## Module structure
+
+Feature modules under `src/modules/`:
+
+```
+src/modules/org/
+├── org.routes.ts
+├── org.controller.ts
+├── org.service.ts
+└── org.schema.ts
+```
+
+Mount routers from `src/routes/index.ts`.
+
+## Request flow
+
+```text
+Request → validate(Zod) → requireSession → requireActiveOrg → requireOrgPermission → controller → service → Prisma
+```
+
+## Controllers
+
+- Thin — parse params, call service, return JSON envelope
+- Use `asyncHandler` — never bare async functions in routes
+- Never access Prisma directly from controllers
+
+## Services
+
+- Business logic + `assertOrgMember()` + `requireOrgPermission()`
+- Throw `ForbiddenError` / `NotFoundError` from `tenant-guard.ts`
+- All org-scoped queries include `where: { organizationId }`
+
+## Validation
+
+- Zod schemas in `*.schema.ts` per module
+- `validate({ body, query, params })` middleware
+- OpenAPI generated from Zod via `@asteasolutions/zod-to-openapi`
+
+## Response envelope
+
+Success:
+
+```json
+{ "success": true, "data": {}, "meta": { "requestId": "..." } }
+```
+
+Error:
+
+```json
+{ "success": false, "error": { "code": "...", "message": "..." }, "meta": { "requestId": "..." } }
+```
+
+Paginated lists include `page`, `limit`, `totalResults`, `totalPages` in `data`.
+
+## Versioning
+
+- All business endpoints under `/api/v1/*`
+- Auth endpoints at `/api/auth/*` (Better Auth — not versioned)
+- OpenAPI UI at `GET /api/v1/docs`
+
+## Cross-reference
+
+> Auth and tenancy: `better-auth-multitenancy.mdc`
+> Endpoint reference: `docs/api.md`

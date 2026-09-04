@@ -1,0 +1,22 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps
+    command: pnpm dev
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: file:./prisma/dev.db
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-run-openssl-rand-base64-32-min-32-chars}
+      BETTER_AUTH_URL: http://localhost:4000
+      CLIENT_URL: http://localhost:3000
+      TRUST_PROXY: 'false'
+      LOG_LEVEL: debug
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: unless-stopped

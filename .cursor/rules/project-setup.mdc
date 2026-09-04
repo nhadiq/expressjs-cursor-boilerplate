@@ -1,0 +1,54 @@
+---
+description: Project bootstrap — run pnpm bootstrap on fresh clone
+alwaysApply: true
+---
+
+# Project Setup
+
+On a **fresh clone**, run once:
+
+```bash
+pnpm install
+pnpm bootstrap
+```
+
+`pnpm bootstrap` will:
+
+1. Copy `.env.example` → `.env` if missing
+2. Generate Prisma client and push the SQLite schema
+3. Install Graphify git hooks (if `graphify` CLI is available)
+4. Build or update `graphify-out/graph.json` (always, when CLI is available)
+
+Then start development:
+
+```bash
+pnpm dev
+```
+
+The API listens on **port 4000** by default (`PORT` env var).
+
+## Prerequisites
+
+| Tool | Purpose | Install |
+|------|---------|---------|
+| Node.js 20+ | Runtime | [nodejs.org](https://nodejs.org) |
+| pnpm | Package manager | `npm i -g pnpm` |
+| Graphify CLI (optional) | Code intelligence graph | `uv tool install graphifyy` |
+
+## Do not commit
+
+- `.env` and other secrets (`.env.example` is committed)
+- `graphify-out/` (local-only; regenerated via bootstrap and post-merge hook)
+- `prisma/dev.db`, `prisma/test.db`, `src/generated/`, `dist/`
+
+## Do commit
+
+- `.cursor/rules/graphify.mdc` (query-first agent behavior)
+
+## Pairing with Next.js frontend
+
+When used with the Next.js boilerplate sibling:
+
+- Express `BETTER_AUTH_URL=http://localhost:4000`
+- Express `CLIENT_URL=http://localhost:3000`
+- See `docs/auth.md` for CORS and cookie configuration

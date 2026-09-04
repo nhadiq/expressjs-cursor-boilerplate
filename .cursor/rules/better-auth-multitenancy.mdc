@@ -1,0 +1,46 @@
+---
+description: Better Auth + org multitenancy file map and anti-hallucination rules (Express)
+alwaysApply: false
+globs: src/lib/auth*.ts, src/lib/tenant-guard.ts, src/lib/org-server.ts, src/lib/org-permissions.ts, src/lib/email.ts, src/middleware/require-session.ts, src/middleware/require-active-org.ts, src/middleware/require-org-permission.ts, src/modules/**/*
+---
+
+# Better Auth & Multitenancy (Express)
+
+Anti-hallucination file map. Every rule references an actual path in this repo.
+
+## File map (source of truth)
+
+| Concern | File | Export / API |
+|---------|------|--------------|
+| Auth config | `src/lib/auth.ts` | `auth` — Better Auth + `organization()` plugin, Resend emails, `databaseHooks.user.create.after` (personal org) |
+| Auth mount | `src/app.ts` | `app.all('/api/auth/*splat', toNodeHandler(auth))` — **before** `express.json()` |
+| Session from request | `src/lib/auth-server.ts` | `getSession(req)` via `fromNodeHeaders(req.headers)` |
+| Server session (org-aware) | `src/lib/org-server.ts` | `requireSession()`, `requireOrganization()`, `getActiveOrganization()`, `listUserOrganizations()` |
+| Session middleware | `src/middleware/require-session.ts` | Attaches `req.user`, `req.session` or returns 401 JSON |
+| Active org middleware | `src/middleware/require-active-org.ts` | Validates `activeOrganizationId` + membership |
+| Permission middleware | `src/middleware/require-org-permission.ts` | Factory: `(permission) => middleware` |
+| Tenant security | `src/lib/tenant-guard.ts` | `assertOrgMember()`, `scopeToActiveOrg()`, `requireOrgPermission()` |
+| RBAC permissions | `src/lib/org-permissions.ts` | `can()`, `isOrgRole()`, `OrgPermission` type |
+| Email | `src/lib/email.ts` | Resend; dev fallback logs to console |
+| Org services | `src/modules/org/org.service.ts` | Business logic + IDOR guards |
+
+## Rules
+
+1. **NEVER** use Supabase, Firebase, Auth.js, or custom session JWT — Better Auth only
+2. **NEVER** use `nextCookies()` — Express uses `toNodeHandler` + `fromNodeHeaders` only
+3. **NEVER** place `express.json()` before the Better Auth handler — auth requests will hang
+4. **ALWAYS** use `requireSession` middleware on protected `/api/v1/*` routes
+5. **ALWAYS** call `requireOrgPermission()` (middleware or service) before member/invitation/settings mutations
+6. **NEVER** trust `organizationId` from client body alone — scope via `session.activeOrganizationId` + `assertOrgMember()`
+7. Auth endpoints live at `/api/auth/*` (Better Auth); business REST at `/api/v1/*`
+8. Personal org auto-created on signup via `databaseHooks` — do not duplicate this logic elsewhere
+9. Google OAuth optional — gated by `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` in `src/env.ts`
+10. Email verification required in production (`requireEmailVerification: true`) — may be disabled in test env
+11. Permission strings: `organization:update`, `organization:delete`, `member:create`, `member:update`, `member:delete`, `invitation:create`, `invitation:cancel`
+12. CORS `credentials: true` required for session cookies from `CLIENT_URL`
+
+## Cross-reference
+
+> For middleware order and mount pitfalls, see `express-auth.mdc`.
+> For security policies (cookie flags, rate limits, secret handling), see `security.mdc`.
+> For Prisma org models and queries, see `prisma.mdc`.

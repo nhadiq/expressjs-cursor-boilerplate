@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -eu
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "→ post-merge: setup reminder (run pnpm bootstrap after schema changes)"

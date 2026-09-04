@@ -1,0 +1,22 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: file:/app/prisma/dev.db
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-run-openssl-rand-base64-32-min-32-chars}
+      BETTER_AUTH_URL: http://localhost:4000
+      CLIENT_URL: http://localhost:3000
+      TRUST_PROXY: 'false'
+      LOG_LEVEL: info
+    volumes:
+      - sqlite-data:/app/prisma
+    restart: unless-stopped
+
+volumes:
+  sqlite-data:

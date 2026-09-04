@@ -1,0 +1,68 @@
+---
+description: Better Auth Express integration — toNodeHandler, fromNodeHeaders, mount order
+alwaysApply: false
+globs: src/app.ts, src/lib/auth.ts, src/lib/auth-server.ts, src/middleware/rate-limit.ts
+---
+
+# Express Auth
+
+Better Auth integration for Express 5. Reference: [Better Auth Express docs](https://better-auth.com/docs/integrations/express).
+
+## Mount handler
+
+```typescript
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from '@/lib/auth';
+
+// BEFORE express.json()
+app.all('/api/auth/*splat', toNodeHandler(auth));
+app.use(express.json({ limit: '1mb' }));
+```
+
+Express 5 requires `*splat` wildcard syntax for catch-all auth routes.
+
+## Session access
+
+```typescript
+import { fromNodeHeaders } from 'better-auth/node';
+import { auth } from '@/lib/auth';
+
+export async function getSession(req: Request) {
+  return auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+}
+```
+
+## What NOT to use
+
+- **No** `nextCookies()` plugin
+- **No** Next.js `headers()` or `cookies()` APIs
+- **No** duplicate auth routes — Better Auth owns `/api/auth/*`
+
+## CORS & cookies
+
+- `cors({ origin: env.CLIENT_URL, credentials: true })`
+- `trustedOrigins: [env.BETTER_AUTH_URL, env.CLIENT_URL]` in `auth.ts`
+- `useSecureCookies: env.NODE_ENV === 'production'`
+- `app.set('trust proxy', 1)` when `TRUST_PROXY=true`
+
+## Rate limiting
+
+- Apply rate limiter only to `/api/auth/*` paths
+- Port `rateLimitAuth` from `src/lib/rate-limit.ts`
+- Return 429 with `Retry-After` header when blocked
+
+## Health check
+
+- `GET /api/auth/ok` — verify handler mounted correctly after bootstrap
+
+## Testing
+
+- Supertest with `request.agent(app)` to persist session cookies
+- Sign up: `POST /api/auth/sign-up/email`
+- Sign in: `POST /api/auth/sign-in/email`
+- See `tests/helpers/auth.ts`
+
+## Cross-reference
+
+> Multitenancy file map: `better-auth-multitenancy.mdc`
+> When to use `/api/auth` vs `/api/v1`: `docs/auth.md`

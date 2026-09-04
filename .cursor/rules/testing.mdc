@@ -1,0 +1,54 @@
+---
+description: Vitest unit tests, Supertest integration tests, test layout, and CI gates
+alwaysApply: false
+globs: tests/**, **/*.test.ts, **/*.spec.ts, vitest.config.*, vitest.setup.ts
+---
+
+# Testing
+
+## Layout
+
+- Mirror source paths under `tests/` (e.g. `tests/lib/org-permissions.test.ts` for `src/lib/org-permissions.ts`)
+- Security tests live in `tests/security/` — IDOR, tenant isolation, rate limiting
+- Integration tests live in `tests/integration/` — Supertest against Express app
+- Helpers live in `tests/helpers/` — `test-app.ts`, `test-db.ts`, `auth.ts`
+
+## Unit tests
+
+- Framework: Vitest (Node environment — no jsdom)
+- Run: `pnpm test` (watch) or `pnpm test:ci` (CI single run)
+- Name tests after user outcomes, not function signatures
+- Mock Prisma in unit tests; use real SQLite DB in integration tests
+
+## Integration tests
+
+- Framework: Vitest + Supertest
+- Run: `pnpm test:integration` or included in `make pre-push`
+- Use `createTestApp()` from `tests/helpers/test-app.ts`
+- Auth: sign up/sign in via Better Auth `/api/auth/*` endpoints; use `request.agent()` for cookies
+- Test env vars set in `vitest.setup.ts` at project root
+
+## Test environment
+
+```
+DATABASE_URL=file:./prisma/test.db
+BETTER_AUTH_SECRET=test-secret-min-32-chars-long!!
+BETTER_AUTH_URL=http://localhost:4000
+CLIENT_URL=http://localhost:3000
+NODE_ENV=test
+```
+
+## CI gates
+
+| Gate | Command | Includes |
+|------|---------|----------|
+| PR / local check | `make check` | lint, format, typecheck, security-audit, vitest unit |
+| Pre-push / CI | `make pre-push` | `make check` + integration tests |
+
+- `make ci` is identical to `make pre-push`
+- Never use `--no-verify` unless explicitly requested (see `git-hooks.mdc`)
+
+## Coverage targets
+
+- ≥80% on `src/lib/tenant-guard.ts`, `src/lib/org-permissions.ts`, middleware
+- Run `vitest --coverage` in CI (optional artifact upload)

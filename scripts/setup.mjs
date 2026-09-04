@@ -1,0 +1,57 @@
+#!/usr/bin/env node
+/**
+ * One-time / fresh-clone project setup.
+ * Run: pnpm bootstrap
+ */
+import { copyFileSync, existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+
+function run(command, args, { optional = false } = {}) {
+  const result = spawnSync(command, args, {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
+
+  if (result.status !== 0 && !optional) {
+    process.exit(result.status ?? 1);
+  }
+
+  return result.status === 0;
+}
+
+function hasCommand(command) {
+  const check =
+    process.platform === 'win32'
+      ? spawnSync('where', [command], { stdio: 'ignore' })
+      : spawnSync('which', [command], { stdio: 'ignore' });
+
+  return check.status === 0;
+}
+
+console.log('Setting up express-cursor-boilerplate...\n');
+
+if (!existsSync('.env') && existsSync('.env.example')) {
+  copyFileSync('.env.example', '.env');
+  console.log('Created .env from .env.example\n');
+}
+
+console.log('Generating Prisma client...');
+run('pnpm', ['exec', 'prisma', 'generate']);
+
+console.log('\nApplying database migrations...');
+const migrated = run('pnpm', ['exec', 'prisma', 'migrate', 'deploy'], {
+  optional: true,
+});
+
+if (!migrated) {
+  console.log('Migration deploy skipped — falling back to db push...');
+  run('pnpm', ['exec', 'prisma', 'db', 'push'], { optional: true });
+}
+
+if (hasCommand('husky')) {
+  console.log('\nInstalling Husky git hooks...');
+  run('pnpm', ['exec', 'husky'], { optional: true });
+}
+
+console.log('\nSetup complete.');
+console.log('Next: pnpm dev');

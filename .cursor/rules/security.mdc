@@ -1,0 +1,47 @@
+---
+description: Security policies — auth, tenancy, input, secrets, headers
+alwaysApply: false
+globs: src/**/*, prisma/**
+---
+
+## Authentication & Sessions
+- Use Better Auth APIs only — never roll custom auth
+- Validate session server-side via `auth.api.getSession({ headers: fromNodeHeaders(req.headers) })` on protected routes
+- `requireSession` middleware is mandatory on `/api/v1/*` protected routes — never trust client claims alone
+- Session cookies: httpOnly, secure in production, sameSite=lax
+- Password min 8 chars; consider increasing to 12 for production policy
+
+## Authorization & Multitenancy
+- Every org-scoped DB query MUST include organizationId from verified session — never from client input alone
+- Use `requireOrgPermission()` before member/invitation/settings mutations
+- Prevent IDOR: verify user is member of org before returning org data
+- RBAC checks on server — client UI hiding is not security
+
+## Input & Output
+- Validate all inputs with Zod schemas — route handlers, query params, request bodies
+- Use Prisma parameterized queries only — no raw SQL string concatenation
+- Sanitize user-generated content displayed as HTML (use plain text or DOMPurify if rich text added)
+- Error responses must not leak stack traces, SQL, or internal paths in production
+
+## Secrets & Configuration
+- Never commit .env, tokens, keys, or credentials
+- All secrets via environment variables; validate at startup with `src/env.ts` (Zod)
+- Never log session tokens, passwords, reset tokens, or API keys
+- Rotate BETTER_AUTH_SECRET on compromise; document in `docs/security-policy.md`
+
+## HTTP & API Security
+- Security headers via `helmet()` on all responses
+- CORS: explicit `CLIENT_URL` only — no wildcard origins in production
+- Rate limit auth endpoints (`/api/auth/*`)
+- `TRUST_PROXY=true` in production behind reverse proxy (secure cookies)
+- Mount Better Auth **before** `express.json()` — see `express-auth.mdc`
+
+## Dependencies & CI
+- Run pnpm audit in make security-audit; block high/critical in CI
+- Dependabot enabled (already configured)
+- No new dependencies without security review
+
+## Logging & Monitoring
+- Log auth failures, permission denials, rate limit hits (no PII in logs)
+- Do not log email addresses at info level in production
+- Redact `cookie`, `authorization`, `set-cookie` in pino-http logs
