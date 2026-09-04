@@ -4,7 +4,7 @@
 - Auth: Better Auth with email/password, Google OAuth (optional), email verification, Resend emails
 - Multitenancy: Better Auth organization plugin — personal org on signup, RBAC, session `activeOrganizationId`
 - Database: Prisma 7 + SQLite (dev); `Account.issuer` field required for Better Auth 1.7 signup
-- API: REST at `/api/v1/*`; auth at `/api/auth/*` via `toNodeHandler`; OpenAPI at `/api/v1/docs`
+- API: REST at `/api/v1/*`; auth at `/api/auth/*` via `toNodeHandler`; OpenAPI at `/api/v1/docs` with full coverage of all v1 endpoints (+ Better Auth reference paths)
 - Env: `dotenv` loads `.env` in `src/env.ts` (Express does not auto-load like Next.js)
 - Tests: 38 passing (Vitest unit + Supertest integration); `vitest.global-setup.ts` for DB isolation
 - Cursor rules: 14 files (4 global + 10 scoped)

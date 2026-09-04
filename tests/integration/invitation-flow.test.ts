@@ -79,6 +79,24 @@ describe('invitation flow integration', () => {
     expect(response.status).toBe(403);
   });
 
+  it('prevents non-members from listing invitations (IDOR)', async () => {
+    const userA = await signUpAndSignIn(app);
+    const userB = await signUpAndSignIn(app);
+    const orgId = await getOwnerOrgId(userA.agent);
+
+    await userA.agent
+      .post(`/api/v1/organizations/${orgId}/invitations`)
+      .set('Origin', process.env.CLIENT_URL ?? 'http://localhost:3000')
+      .send({ email: 'secret@example.com', role: 'member' });
+
+    const forbidden = await userB.agent
+      .get(`/api/v1/organizations/${orgId}/invitations`)
+      .set('Origin', process.env.CLIENT_URL ?? 'http://localhost:3000');
+
+    expect(forbidden.status).toBe(403);
+    expect(forbidden.body.success).toBe(false);
+  });
+
   it('allows owner to cancel a pending invitation', async () => {
     const owner = await signUpAndSignIn(app);
     const orgId = await getOwnerOrgId(owner.agent);

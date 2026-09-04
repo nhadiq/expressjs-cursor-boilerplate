@@ -42,7 +42,8 @@ Request → validate(Zod) → requireSession → requireActiveOrg → requireOrg
 
 - Zod schemas in `*.schema.ts` per module
 - `validate({ body, query, params })` middleware
-- OpenAPI generated from Zod via `@asteasolutions/zod-to-openapi`
+- OpenAPI via `@asteasolutions/zod-to-openapi`: register paths in `src/api-docs/openapi.ts` with `registry.registerPath()` (not auto-synced from route files; no decorators)
+- When adding a v1 endpoint, add a matching `registerPath` entry — route Zod schemas in `*.routes.ts` are separate unless you extract and reuse them
 
 ## Response envelope
 
@@ -69,4 +70,5 @@ Paginated lists include `page`, `limit`, `totalResults`, `totalPages` in `data`.
 ## Cross-reference
 
 > Auth and tenancy: `better-auth-multitenancy.mdc`
+> OpenAPI registry (required for every route): `express-openapi.mdc`
 > Endpoint reference: `docs/api.md`

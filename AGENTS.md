@@ -5,7 +5,7 @@ TypeScript Express 5 API boilerplate with Better Auth, Prisma 7, and organizatio
 ## Before writing code
 
 1. Run `graphify query "<your question>"` before exploring source (see `.cursor/rules/graphify.mdc`)
-2. Read relevant Cursor rules: `express-core.mdc`, `express-auth.mdc`, `better-auth-multitenancy.mdc`
+2. Read relevant Cursor rules: `express-core.mdc`, `express-auth.mdc`, `better-auth-multitenancy.mdc`, `express-openapi.mdc` (when adding/changing routes)
 3. Check `package.json` before using any third-party API
 
 ## Critical invariants

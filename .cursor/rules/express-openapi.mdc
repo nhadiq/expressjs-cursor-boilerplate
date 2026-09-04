@@ -1,0 +1,39 @@
+---
+description: OpenAPI registry requirements for API route changes
+alwaysApply: false
+globs: src/modules/**/*.routes.ts, src/api-docs/**
+---
+
+# Express OpenAPI
+
+Every business API endpoint **must** have a matching `registry.registerPath()` entry in `src/api-docs/openapi.ts`. The registry is **not** auto-synced from route files.
+
+## When this rule applies
+
+- Adding a new route in `src/modules/**/*.routes.ts`
+- Changing method, path, request validation, or response shape on an existing route
+- Editing `src/api-docs/openapi.ts` or `src/api-docs/docs.routes.ts`
+
+## Checklist (required)
+
+1. **New or changed route** — update the matching handler in `*.routes.ts`
+2. **Register path** — add or update `registry.registerPath()` in `src/api-docs/openapi.ts`:
+   - Full path including prefix (`/api/v1/...` for business APIs; `/health`, `/ready` for probes)
+   - Correct HTTP method and tag (`Health`, `Me`, `Organizations`, `Members`, `Invitations`)
+   - `security: [{ cookieAuth: [] }]` for protected routes; omit for public health probes
+   - Request `params`, `query`, and `body` schemas (Zod)
+   - Response schemas: success envelope (`success: true`, `data`) plus errors (`400`, `403`, `404`, `409` where applicable)
+3. **Verify** — start the server and confirm the operation appears at `GET /api/v1/docs` (or `GET /api/v1/docs/openapi.json`)
+
+## Conventions
+
+- **Programmatic only** — use `@asteasolutions/zod-to-openapi` with `registry.registerPath()`; no decorators or auto-generation from route files
+- **Reuse Zod where practical** — mirror or extract schemas from `*.routes.ts`; keep request/response shapes aligned with the route handler
+- **Response envelope** — success: `{ success: true, data, meta? }`; error: `{ success: false, error: { message, code? } }` (see `express-api.mdc`)
+- **Auth paths** — Better Auth owns `/api/auth/*`; document reference paths only unless implementing REST wrappers
+- **Organize by tag** — group `registerPath` entries by module in `openapi.ts`
+
+## Cross-reference
+
+> Route patterns and envelope: `express-api.mdc`
+> Auth mount and session: `express-auth.mdc`, `better-auth-multitenancy.mdc`

@@ -4,6 +4,7 @@ import { asyncHandler } from '@/lib/async-handler.js';
 import { ApiError } from '@/lib/api-error.js';
 import { success } from '@/lib/service-response.js';
 import { prisma } from '@/lib/db.js';
+import { assertOrgMember } from '@/lib/tenant-guard.js';
 import { requireSession } from '@/middleware/require-session.js';
 import { requireOrgPermissionMiddleware } from '@/middleware/require-org-permission.js';
 import { validate } from '@/middleware/validate.js';
@@ -20,7 +21,10 @@ invitationRouter.use(requireSession);
 invitationRouter.get(
   '/',
   asyncHandler(async (req, res) => {
+    const session = req.session!;
     const { orgId } = req.params as { orgId: string };
+
+    await assertOrgMember(session.user.id, orgId);
 
     const invitations = await prisma.invitation.findMany({
       where: { organizationId: orgId, status: 'pending' },
